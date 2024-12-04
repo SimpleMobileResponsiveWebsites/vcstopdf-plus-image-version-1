@@ -1,9 +1,9 @@
 import streamlit as st
-import base64
 import os
 import uuid
 from datetime import datetime
 from io import BytesIO
+import tempfile
 
 import pandas as pd
 import plotly.express as px
@@ -19,13 +19,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
+
 class DocumentationApp:
     def __init__(self):
-        # Ensure necessary directories exist
-        self.IMAGES_DIR = "uploaded_images"
-        self.BACKUP_DIR = "backups"
-        os.makedirs(self.IMAGES_DIR, exist_ok=True)
-        os.makedirs(self.BACKUP_DIR, exist_ok=True)
+        # Temporary directories for cloud compatibility
+        self.temp_dir = tempfile.gettempdir()
 
         # Initialize session state
         self._initialize_session_state()
@@ -51,23 +49,21 @@ class DocumentationApp:
         """Save uploaded image with unique filename and validation"""
         if uploaded_file is not None:
             try:
-                # Validate image
+                # Validate and save image
                 img = Image.open(uploaded_file)
                 img.verify()  # Verify the image is not corrupted
 
-                # Create version-specific directory
-                version_dir = os.path.join(self.IMAGES_DIR, app_version)
-                os.makedirs(version_dir, exist_ok=True)
-
                 # Generate unique filename
                 unique_filename = f"{uuid.uuid4()}_{uploaded_file.name}"
-                filename = os.path.join(version_dir, unique_filename)
+                version_dir = os.path.join(self.temp_dir, app_version)
+                os.makedirs(version_dir, exist_ok=True)
+                filepath = os.path.join(version_dir, unique_filename)
 
-                # Save the file
+                # Save the image
                 img = Image.open(uploaded_file)
-                img.save(filename)
+                img.save(filepath)
 
-                return filename
+                return filepath
             except Exception as e:
                 st.error(f"Error saving image: {e}")
                 return None
@@ -115,7 +111,7 @@ class DocumentationApp:
     def _render_image_upload_section(self):
         """Render image upload functionality"""
         app_version = st.text_input("Select Version for Image Upload:")
-        
+
         if app_version:
             uploaded_images = st.file_uploader(
                 "Upload Images", 
@@ -125,18 +121,17 @@ class DocumentationApp:
 
             if uploaded_images:
                 for img in uploaded_images:
-                    if st.button(f"Save {img.name}"):
-                        saved_path = self.save_uploaded_image(img, app_version)
-                        if saved_path:
-                            if app_version not in st.session_state.images_dict:
-                                st.session_state.images_dict[app_version] = []
-                            st.session_state.images_dict[app_version].append(saved_path)
-                            st.success(f"Image {img.name} saved successfully!")
+                    saved_path = self.save_uploaded_image(img, app_version)
+                    if saved_path:
+                        if app_version not in st.session_state.images_dict:
+                            st.session_state.images_dict[app_version] = []
+                        st.session_state.images_dict[app_version].append(saved_path)
+                        st.success(f"Image {img.name} saved successfully!")
 
     def _render_code_and_terminal_section(self):
         """Render code and terminal sections"""
         app_version = st.text_input("Version for Code/Terminal Entry:")
-        
+
         if app_version:
             # Code input
             code = st_ace(
@@ -207,20 +202,21 @@ class DocumentationApp:
 
     def _generate_pdf(self):
         """Generate comprehensive PDF documentation"""
-        # PDF generation logic similar to previous implementation
-        # Add more robust error handling and comprehensive content capture
+        st.warning("PDF generation is not implemented yet.")
 
     def _generate_markdown(self):
         """Generate markdown documentation"""
-        # Markdown generation logic
+        st.warning("Markdown generation is not implemented yet.")
 
     def _generate_html(self):
         """Generate HTML documentation"""
-        # HTML generation logic
+        st.warning("HTML generation is not implemented yet.")
+
 
 def main():
     app = DocumentationApp()
     app.render_app()
+
 
 if __name__ == "__main__":
     main()
