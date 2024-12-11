@@ -1,6 +1,15 @@
-streamlit==1.26.0
-pandas==2.1.1
-plotly==5.16.1
-pillow==9.5.0
+# Core Libraries
+streamlit==1.29.0
+pandas==2.2.0
+plotly==5.18.0
+pillow==10.2.0
+
+# Code Editing
 streamlit-ace==0.1.1
-reportlab==3.6.12
+
+# PDF Generation
+reportlab==4.0.8
+
+# Additional Dependencies
+python-dateutil==2.9.0.post0
+pytz==2024.1
