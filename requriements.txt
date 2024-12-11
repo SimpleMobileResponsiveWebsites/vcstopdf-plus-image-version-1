@@ -1,7 +1,11 @@
-# Core Libraries
+# Core Streamlit and Data Processing
 streamlit==1.29.0
 pandas==2.2.0
+
+# Optional but Recommended Visualization
 plotly==5.18.0
+
+# Image Handling
 pillow==10.2.0
 
 # Code Editing
@@ -10,6 +14,6 @@ streamlit-ace==0.1.1
 # PDF Generation
 reportlab==4.0.8
 
-# Additional Dependencies
+# Additional Supporting Libraries
 python-dateutil==2.9.0.post0
 pytz==2024.1
