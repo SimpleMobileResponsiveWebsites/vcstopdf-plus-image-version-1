@@ -1,145 +1,149 @@
-import os
-import uuid
-from datetime import datetime
-import tempfile
-import sys
-import traceback
-import logging
+# Import the necessary modules
+import streamlit as st
+from io import BytesIO
+import base64
+from streamlit_ace import st_ace
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Preformatted, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-logging.basicConfig(level=logging.INFO)
+# Function to create download PDF link
+def create_download_link_pdf(pdf_data, download_filename):
+    b64 = base64.b64encode(pdf_data).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="{download_filename}">Download PDF</a>'
+    return href
 
-try:
-    import pandas as pd
-    from PIL import Image
-    import streamlit as st
-    from streamlit_ace import st_ace
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, 
-        Preformatted, Image as PDFImage, Table, TableStyle
-    )
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.lib import colors
-except ImportError as e:
-    logging.error(f"Error importing libraries: {e}")
-    logging.error(traceback.format_exc())
+# Initialize session states
+st.session_state.setdefault("task_list", [])
+st.session_state.setdefault("link_dict", {})
+st.session_state.setdefault("file_dict", {})
+st.session_state.setdefault("text_dict", {})
+st.session_state.setdefault("code_dict", {})
+st.session_state.setdefault("image_dict", {})
 
+# Input fields
+task = st.text_input("Enter your task:")
+if st.button("Save Task"):
+    st.session_state.task_list.append(task)
 
-class DocumentationApp:
-    def __init__(self):
-        # Add system information logging
-        self._log_system_info()
-        
-        # Temporary directories for cloud compatibility
-        self.temp_dir = tempfile.gettempdir()
+link = st.text_input("Enter a research link for the task:")
+if st.button("Save Link"):
+    st.session_state.link_dict.setdefault(task, []).append(link)
 
-        # Initialize session state
-        self._initialize_session_state()
+uploaded_file = st.file_uploader("Upload a document for the task:")
+if st.button("Save File"):
+    st.session_state.file_dict.setdefault(task, []).append(uploaded_file)
 
-    def _log_system_info(self):
-        """Log system and library versions for debugging"""
-        st.sidebar.header("System Information")
-        st.sidebar.write(f"Python Version: {sys.version}")
-        st.sidebar.write(f"Streamlit Version: {st.__version__}")
-        st.sidebar.write(f"Pandas Version: {pd.__version__}")
+text = st.text_area("Enter text for the task:")
+if st.button("Save Text"):
+    st.session_state.text_dict.setdefault(task, []).append(text)
 
-    def _initialize_session_state(self):
-        """Initialize all required session states with checks"""
-        try:
-            default_states = {
-                'task_list': [],
-                'text_dict': {},
-                'code_dict': {},
-                'interpreter_dict': {},
-                'terminal_dict': {},
-                'images_dict': {},
-                'metrics_dict': {},
-                'logs_dict': {}
-            }
+# Ace editor for code
+code = st_ace(language="python", theme="monokai", key="ace-editor")
+if st.button("Save Code"):
+    st.session_state.code_dict.setdefault(task, []).append(code)
 
-            for key, default_value in default_states.items():
-                if key not in st.session_state:
-                    st.session_state[key] = default_value
-        except Exception as e:
-            logging.error(f"Error initializing session state: {e}")
-            logging.error(traceback.format_exc())
+# Upload image
+uploaded_image = st.file_uploader("Upload an image for the task:")
+if st.button("Save Image"):
+    st.session_state.image_dict.setdefault(task, []).append(uploaded_image)
 
-    def render_app(self):
-        """Main application rendering method"""
-        try:
-            st.title("Advanced Documentation & Testing App")
+# Display saved items
+st.write("## Saved Items")
+for task in st.session_state.task_list:
+    st.write(f"### Task: {task}")
 
-            st.info("""
-            Welcome to the Documentation App! 
-            - Start by entering an App Version
-            - Use the expandable sections to add content
-            - Export your documentation when ready
-            """)
+    # Display links
+    if task in st.session_state.link_dict:
+        st.write("#### Links:")
+        for link in st.session_state.link_dict[task]:
+            st.write(f"- {link}")
 
-            # Version and Metrics Section
-            with st.expander("Version & Metrics", expanded=True):
-                self._render_version_section()
+    # Display uploaded files
+    if task in st.session_state.file_dict:
+        st.write("#### Files:")
+        for file in st.session_state.file_dict[task]:
+            st.write(f"- {file.name if file else 'Unknown'}")
 
-            # Image Upload Section
-            with st.expander("Image Management"):
-                self._render_image_upload_section()
+    # Display text
+    if task in st.session_state.text_dict:
+        st.write("#### Text:")
+        for text in st.session_state.text_dict[task]:
+            st.write(f"- {text}")
 
-            # Code and Terminal Sections
-            with st.expander("Code & Terminal Logs"):
-                self._render_code_and_terminal_section()
+    # Display code
+    if task in st.session_state.code_dict:
+        st.write("#### Code:")
+        for code in st.session_state.code_dict[task]:
+            code_paragraph_style = ParagraphStyle(
+                name='CodeStyle', fontName='Courier', fontSize=8, leftIndent=10, rightIndent=10, leading=8, wordWrap='CJK'
+            )
+            code_paragraph = Preformatted(code, code_paragraph_style)
+            st.markdown(f"```\n{code}\n```")
 
-            # Display and Export Section
-            with st.expander("Saved Documentation"):
-                self._display_saved_items()
-                self._render_export_options()
+    # Display image
+    if task in st.session_state.image_dict:
+        st.write("#### Image:")
+        for image in st.session_state.image_dict[task]:
+            if image:
+                st.image(image)
 
-        except Exception as e:
-            logging.error(f"Critical error in rendering app: {e}")
-            logging.error(traceback.format_exc())
+# Generate PDF
+if st.button("Generate PDF"):
+    pdf_buffer = BytesIO()
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, leftMargin=36, rightMargin=36)
+    styles = getSampleStyleSheet()
 
-    def _render_version_section(self):
-        """Render version input and metrics section"""
-        try:
-            col1, col2 = st.columns(2)
-            with col1:
-                app_version = st.text_input("App Version:", key="app_version_input")
-            with col2:
-                interpreter_version = st.text_input("Interpreter Version:", key="interpreter_version_input")
+    # Create a list of elements for the PDF
+    pdf_elements = []
 
-            if st.button("Save Version Information"):
-                if app_version:
-                    if app_version not in st.session_state.task_list:
-                        st.session_state.task_list.append(app_version)
-                    st.session_state.interpreter_dict[app_version] = {
-                        'version': interpreter_version,
-                        'timestamp': datetime.now().isoformat()
-                    }
-                    st.success("Version information saved!")
-                else:
-                    st.warning("Please enter an App Version")
-        except Exception as e:
-            logging.error(f"Error in version section: {e}")
-            logging.error(traceback.format_exc())
+    for task in st.session_state.task_list:
+        pdf_elements.append(Paragraph(f"Task: {task}", styles['Heading1']))
 
-    def _render_image_upload_section(self):
-        """Render image upload section"""
-        try:
-            image_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
-            if image_file:
-                st.session_state.images_dict[image_file.name] = image_file
-                st.success(f"Image uploaded successfully: {image_file.name}")
-        except Exception as e:
-            logging.error(f"Error in image upload section: {e}")
-            logging.error(traceback.format_exc())
+        # Display links
+        if task in st.session_state.link_dict:
+            pdf_elements.append(Paragraph("Links:", styles['Heading2']))
+            for link in st.session_state.link_dict[task]:
+                pdf_elements.append(Paragraph(f"- {link}", styles['Normal']))
 
-    def _render_code_and_terminal_section(self):
-        """Render code and terminal section"""
-        try:
-            code = st_ace()
-            if st.button("Save Code"):
-                st.session_state.code_dict["code"] = code
-                st.success("Code saved successfully")
-        except Exception as e:
-            logging.error(f"Error in code and terminal section: {e}")
-            logging
+        # Display uploaded files
+        if task in st.session_state.file_dict:
+            pdf_elements.append(Paragraph("Files:", styles['Heading2']))
+            for file in st.session_state.file_dict[task]:
+                pdf_elements.append(Paragraph(f"- {file.name if file else 'Unknown'}", styles['Normal']))
+
+        # Display text
+        if task in st.session_state.text_dict:
+            pdf_elements.append(Paragraph("Text:", styles['Heading2']))
+            for text in st.session_state.text_dict[task]:
+                pdf_elements.append(Paragraph(f"- {text}", styles['Normal']))
+
+        # Display code
+        if task in st.session_state.code_dict:
+            pdf_elements.append(Paragraph("Code:", styles['Heading2']))
+            for code in st.session_state.code_dict[task]:
+                code_paragraph_style = ParagraphStyle(
+                    name='CodeStyle', fontName='Courier', fontSize=8, leftIndent=10, rightIndent=10, leading=8, wordWrap='CJK'
+                )
+                # Set a fixed width for code block to enable wrapping
+                code_paragraph = Preformatted(code, code_paragraph_style, maxLineLength=65)  # Adjust maxLineLength as needed
+                pdf_elements.append(code_paragraph)
+                pdf_elements.append(Spacer(1, 10))  # Add spacing after code
+
+        # Display image
+        if task in st.session_state.image_dict:
+            pdf_elements.append(Paragraph("Image:", styles['Heading2']))
+            for image in st.session_state.image_dict[task]:
+                if image:
+                    pdf_elements.append(Image(image, width=200, height=200))  # Adjust image size as needed
+                    pdf_elements.append(Spacer(1, 10))  # Add spacing after image
+
+    # Build the PDF document
+    doc.build(pdf_elements)
+
+    # Output the PDF content to the BytesIO buffer
+    pdf_buffer.seek(0)
+    pdf_data = pdf_buffer.read()
+
+    # Create a download link for the PDF
+    st.markdown(create_download_link_pdf(pdf_data, "your_file.pdf"), unsafe_allow_html=True)
