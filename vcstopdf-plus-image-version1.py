@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO)
 try:
     import pandas as pd
     from PIL import Image
+    import streamlit as st
     from streamlit_ace import st_ace
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import (
@@ -23,6 +24,7 @@ try:
 except ImportError as e:
     logging.error(f"Error importing libraries: {e}")
     logging.error(traceback.format_exc())
+
 
 class DocumentationApp:
     def __init__(self):
@@ -120,23 +122,24 @@ class DocumentationApp:
             logging.error(f"Error in version section: {e}")
             logging.error(traceback.format_exc())
 
-def main():
-    try:
-        # Set page configuration
-        st.set_page_config(
-            page_title="Documentation App", 
-            page_icon=":memo:", 
-            layout="wide"
-        )
-        
-        # Initialize and render the app
-        app = DocumentationApp()
-        app.render_app()
-    
-    except Exception as e:
-        logging.error(f"Unhandled error in main application: {e}")
-        logging.error(traceback.format_exc())
+    def _render_image_upload_section(self):
+        """Render image upload section"""
+        try:
+            image_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
+            if image_file:
+                st.session_state.images_dict[image_file.name] = image_file
+                st.success(f"Image uploaded successfully: {image_file.name}")
+        except Exception as e:
+            logging.error(f"Error in image upload section: {e}")
+            logging.error(traceback.format_exc())
 
-
-if __name__ == "__main__":
-    main()
+    def _render_code_and_terminal_section(self):
+        """Render code and terminal section"""
+        try:
+            code = st_ace()
+            if st.button("Save Code"):
+                st.session_state.code_dict["code"] = code
+                st.success("Code saved successfully")
+        except Exception as e:
+            logging.error(f"Error in code and terminal section: {e}")
+            logging
