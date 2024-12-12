@@ -1,10 +1,12 @@
-import streamlit as st
 import os
 import uuid
 from datetime import datetime
 import tempfile
 import sys
 import traceback
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 import pandas as pd
 from PIL import Image
@@ -55,8 +57,8 @@ class DocumentationApp:
                 if key not in st.session_state:
                     st.session_state[key] = default_value
         except Exception as e:
-            st.error(f"Error initializing session state: {e}")
-            st.error(traceback.format_exc())
+            logging.error(f"Error initializing session state: {e}")
+            logging.error(traceback.format_exc())
 
     def render_app(self):
         """Main application rendering method"""
@@ -88,8 +90,8 @@ class DocumentationApp:
                 self._render_export_options()
 
         except Exception as e:
-            st.error(f"Critical error in rendering app: {e}")
-            st.error(traceback.format_exc())
+            logging.error(f"Critical error in rendering app: {e}")
+            logging.error(traceback.format_exc())
 
     def _render_version_section(self):
         """Render version input and metrics section"""
@@ -112,10 +114,8 @@ class DocumentationApp:
                 else:
                     st.warning("Please enter an App Version")
         except Exception as e:
-            st.error(f"Error in version section: {e}")
-            st.error(traceback.format_exc())
-
-    # [Rest of the methods remain the same as in previous version]
+            logging.error(f"Error in version section: {e}")
+            logging.error(traceback.format_exc())
 
 def main():
     try:
@@ -131,8 +131,8 @@ def main():
         app.render_app()
     
     except Exception as e:
-        st.error(f"Unhandled error in main application: {e}")
-        st.error(traceback.format_exc())
+        logging.error(f"Unhandled error in main application: {e}")
+        logging.error(traceback.format_exc())
 
 
 if __name__ == "__main__":
