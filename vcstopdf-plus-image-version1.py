@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-from fpdf import FPDF
+from fpdf2 import FPDF
 import io
 
 def main():
