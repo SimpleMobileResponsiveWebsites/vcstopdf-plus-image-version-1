@@ -8,18 +8,21 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-import pandas as pd
-from PIL import Image
-
-from streamlit_ace import st_ace
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, 
-    Preformatted, Image as PDFImage, Table, TableStyle
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
+try:
+    import pandas as pd
+    from PIL import Image
+    from streamlit_ace import st_ace
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, 
+        Preformatted, Image as PDFImage, Table, TableStyle
+    )
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+except ImportError as e:
+    logging.error(f"Error importing libraries: {e}")
+    logging.error(traceback.format_exc())
 
 class DocumentationApp:
     def __init__(self):
